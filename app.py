@@ -2,565 +2,772 @@ import streamlit as st
 import math
 
 # ============================================================
-# ANNSEVA AI
-# AI-Based Food Security & Demand Prediction System
-# SDG 2 - Zero Hunger
+# BUILDWISE AI
+# AI-Based House Material & Cost Estimator
+# Educational Prototype
 # ============================================================
 
 st.set_page_config(
-    page_title="AnnSeva AI",
-    page_icon="🌾",
+    page_title="BuildWise AI",
+    page_icon="🏠",
     layout="wide"
 )
 
 # ============================================================
-# PAGE DESIGN
-# ============================================================
-
-st.markdown("""
-<style>
-
-.main-title {
-    font-size: 45px;
-    font-weight: bold;
-    text-align: center;
-}
-
-.subtitle {
-    text-align: center;
-    font-size: 20px;
-    margin-bottom: 25px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# HEADER
+# PAGE TITLE
 # ============================================================
 
 st.markdown(
-    '<div class="main-title">🌾 ANNSEVA AI</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">'
-    'AI-Based Food Security & Demand Prediction System'
-    '</div>',
+    """
+    <h1 style="text-align:center;">🏠 BUILDWISE AI</h1>
+    <p style="text-align:center; font-size:20px;">
+    AI-Based House Material & Construction Cost Estimator
+    </p>
+    """,
     unsafe_allow_html=True
 )
 
 st.info(
-    "🌍 SDG 2 – Zero Hunger | "
-    "Predict food requirements and identify possible food shortages."
+    "🤖 Enter your house requirements and BuildWise AI will "
+    "estimate the approximate construction materials and cost."
+)
+
+st.warning(
+    "⚠️ Educational estimation only. Actual construction "
+    "requirements must be calculated by qualified architects "
+    "and structural engineers."
 )
 
 
 # ============================================================
-# FOOD DATABASE
+# SIDEBAR - HOUSE INPUT
 # ============================================================
 
-FOOD_DATABASE = {
+st.sidebar.header("🏠 House Requirements")
 
-    "Rice": {
-        "quantity": 180,
-        "unit": "kg/person/day"
-    },
+land_area = st.sidebar.number_input(
+    "Land / Plot Area (sq ft)",
+    min_value=100.0,
+    max_value=100000.0,
+    value=1500.0,
+    step=100.0
+)
 
-    "Wheat Flour": {
-        "quantity": 120,
-        "unit": "kg/person/day"
-    },
+floors = st.sidebar.number_input(
+    "Number of Floors",
+    min_value=1,
+    max_value=10,
+    value=1,
+    step=1
+)
 
-    "Dal": {
-        "quantity": 60,
-        "unit": "kg/person/day"
-    },
+bedrooms = st.sidebar.number_input(
+    "Number of Bedrooms",
+    min_value=0,
+    max_value=20,
+    value=3,
+    step=1
+)
 
-    "Vegetables": {
-        "quantity": 150,
-        "unit": "kg/person/day"
-    },
+bathrooms = st.sidebar.number_input(
+    "Number of Bathrooms",
+    min_value=0,
+    max_value=20,
+    value=2,
+    step=1
+)
 
-    "Potatoes": {
-        "quantity": 100,
-        "unit": "kg/person/day"
-    },
+living_rooms = st.sidebar.number_input(
+    "Living Rooms",
+    min_value=0,
+    max_value=10,
+    value=1,
+    step=1
+)
 
-    "Milk": {
-        "quantity": 200,
-        "unit": "litres/person/day"
-    },
+dining_rooms = st.sidebar.number_input(
+    "Dining Rooms",
+    min_value=0,
+    max_value=10,
+    value=1,
+    step=1
+)
 
-    "Fruits": {
-        "quantity": 100,
-        "unit": "kg/person/day"
-    }
+kitchens = st.sidebar.number_input(
+    "Kitchens",
+    min_value=0,
+    max_value=10,
+    value=1,
+    step=1
+)
+
+parking_spaces = st.sidebar.number_input(
+    "Parking Spaces",
+    min_value=0,
+    max_value=10,
+    value=1,
+    step=1
+)
+
+balconies = st.sidebar.number_input(
+    "Balconies",
+    min_value=0,
+    max_value=20,
+    value=1,
+    step=1
+)
+
+
+# ============================================================
+# CONSTRUCTION QUALITY
+# ============================================================
+
+quality = st.sidebar.selectbox(
+    "Construction Quality",
+    [
+        "Economy",
+        "Standard",
+        "Premium"
+    ]
+)
+
+
+# ============================================================
+# LOCATION / COST LEVEL
+# ============================================================
+
+location_level = st.sidebar.selectbox(
+    "Construction Cost Level",
+    [
+        "Low Cost Area",
+        "Average Cost Area",
+        "High Cost Area"
+    ]
+)
+
+
+# ============================================================
+# MATERIAL COST DATABASE
+# ============================================================
+
+material_prices = {
+
+    "Cement": 420,        # ₹ per bag
+    "Steel": 65,          # ₹ per kg
+    "Bricks": 10,         # ₹ per piece
+    "Sand": 1800,         # ₹ per cubic metre
+    "Aggregate": 1600,    # ₹ per cubic metre
+    "Tiles": 70,          # ₹ per sq ft
+    "Paint": 35           # ₹ per sq ft
 }
 
 
 # ============================================================
-# SIDEBAR
+# COST MULTIPLIERS
 # ============================================================
 
-st.sidebar.header("👥 Community Information")
+quality_factor = {
 
-adults = st.sidebar.number_input(
-    "Number of Adults",
-    min_value=0,
-    max_value=100000,
-    value=100,
-    step=10
-)
+    "Economy": 0.90,
+    "Standard": 1.00,
+    "Premium": 1.25
+}
 
-children = st.sidebar.number_input(
-    "Number of Children",
-    min_value=0,
-    max_value=100000,
-    value=50,
-    step=10
-)
 
-days = st.sidebar.number_input(
-    "Planning Period (Days)",
-    min_value=1,
-    max_value=365,
-    value=7,
-    step=1
-)
+location_factor = {
 
-meals_per_day = st.sidebar.selectbox(
-    "Meals Per Day",
-    [1, 2, 3]
-)
-
-activity_level = st.sidebar.selectbox(
-    "Community Activity Level",
-    [
-        "Low",
-        "Normal",
-        "High"
-    ]
-)
+    "Low Cost Area": 0.90,
+    "Average Cost Area": 1.00,
+    "High Cost Area": 1.20
+}
 
 
 # ============================================================
-# FOOD SELECTION
+# ROOM SPACE ESTIMATION
 # ============================================================
 
-st.subheader("🍚 Select Food Items")
+def estimate_house_area():
 
-selected_foods = st.multiselect(
-    "Choose food items to plan:",
-    list(FOOD_DATABASE.keys()),
-    default=[
-        "Rice",
-        "Dal",
-        "Vegetables"
-    ]
-)
+    # Approximate space allocation
+    bedroom_area = bedrooms * 120
 
+    bathroom_area = bathrooms * 45
 
-# ============================================================
-# FOOD REQUIREMENT FUNCTION
-# ============================================================
+    living_area = living_rooms * 180
 
-def calculate_food_requirement(
-    food,
-    adults,
-    children,
-    days,
-    meals_per_day,
-    activity_level
-):
+    dining_area = dining_rooms * 120
 
-    base_quantity = FOOD_DATABASE[food]["quantity"]
+    kitchen_area = kitchens * 100
 
-    # Children are treated as approximately
-    # 60% of an adult-equivalent portion.
-    effective_people = (
-        adults +
-        (children * 0.60)
+    parking_area = parking_spaces * 180
+
+    balcony_area = balconies * 50
+
+    estimated_required_area = (
+        bedroom_area
+        + bathroom_area
+        + living_area
+        + dining_area
+        + kitchen_area
+        + parking_area
+        + balcony_area
     )
 
-    # Activity adjustment
-    if activity_level == "High":
+    return estimated_required_area
 
-        activity_factor = 1.10
 
-    elif activity_level == "Low":
+# ============================================================
+# MATERIAL ESTIMATION
+# ============================================================
 
-        activity_factor = 0.90
+def estimate_materials(construction_area):
+
+    # Approximate educational planning factors.
+    # These are NOT structural design values.
+
+    cement_per_sqft = 0.40
+    steel_per_sqft = 4.0
+    bricks_per_sqft = 8.0
+    sand_per_sqft = 0.015
+    aggregate_per_sqft = 0.012
+
+    # Quality adjustment
+    q_factor = quality_factor[quality]
+
+    cement_bags = (
+        construction_area
+        * cement_per_sqft
+        * q_factor
+    )
+
+    steel_kg = (
+        construction_area
+        * steel_per_sqft
+        * q_factor
+    )
+
+    bricks = (
+        construction_area
+        * bricks_per_sqft
+        * q_factor
+    )
+
+    sand_m3 = (
+        construction_area
+        * sand_per_sqft
+        * q_factor
+    )
+
+    aggregate_m3 = (
+        construction_area
+        * aggregate_per_sqft
+        * q_factor
+    )
+
+    # Approximate floor finishing area
+    tiles_area = construction_area * 0.75
+
+    # Approximate paint area
+    paint_area = construction_area * 3.0
+
+    return {
+        "Cement": round(cement_bags),
+        "Steel": round(steel_kg),
+        "Bricks": round(bricks),
+        "Sand": round(sand_m3, 2),
+        "Aggregate": round(aggregate_m3, 2),
+        "Tiles": round(tiles_area),
+        "Paint": round(paint_area)
+    }
+
+
+# ============================================================
+# COST CALCULATION
+# ============================================================
+
+def calculate_cost(materials):
+
+    location_multiplier = location_factor[
+        location_level
+    ]
+
+    costs = {}
+
+    costs["Cement"] = (
+        materials["Cement"]
+        * material_prices["Cement"]
+    )
+
+    costs["Steel"] = (
+        materials["Steel"]
+        * material_prices["Steel"]
+    )
+
+    costs["Bricks"] = (
+        materials["Bricks"]
+        * material_prices["Bricks"]
+    )
+
+    costs["Sand"] = (
+        materials["Sand"]
+        * material_prices["Sand"]
+    )
+
+    costs["Aggregate"] = (
+        materials["Aggregate"]
+        * material_prices["Aggregate"]
+    )
+
+    costs["Tiles"] = (
+        materials["Tiles"]
+        * material_prices["Tiles"]
+    )
+
+    costs["Paint"] = (
+        materials["Paint"]
+        * material_prices["Paint"]
+    )
+
+    # Location adjustment
+    for item in costs:
+
+        costs[item] = (
+            costs[item]
+            * location_multiplier
+        )
+
+    return costs
+
+
+# ============================================================
+# AI RECOMMENDATION ENGINE
+# ============================================================
+
+def generate_recommendations(
+    land_area,
+    construction_area,
+    bedrooms,
+    bathrooms,
+    parking_spaces,
+    quality
+):
+
+    recommendations = []
+
+    # Plot utilization
+    utilization = (
+        construction_area /
+        land_area
+    ) * 100
+
+    if utilization > 90:
+
+        recommendations.append(
+            "🏠 The estimated built-up area is very high "
+            "compared with the plot area. Consider leaving "
+            "adequate open space."
+        )
+
+    elif utilization < 50:
+
+        recommendations.append(
+            "🌱 A significant part of the plot may remain "
+            "open. Consider using it for landscaping or "
+            "rainwater management."
+        )
 
     else:
 
-        activity_factor = 1.00
+        recommendations.append(
+            "✅ The estimated space allocation is reasonably "
+            "balanced for this prototype."
+        )
 
-    # Food requirement
-    quantity = (
-        base_quantity
-        * effective_people
-        * days
-        * meals_per_day
-        * activity_factor
+    # Bathroom recommendation
+
+    if bathrooms > bedrooms + 1:
+
+        recommendations.append(
+            "🚿 The number of bathrooms is relatively high "
+            "compared with bedrooms. Review the requirement."
+        )
+
+    # Parking recommendation
+
+    if parking_spaces == 0:
+
+        recommendations.append(
+            "🚗 No parking space has been included."
+        )
+
+    # Quality recommendation
+
+    if quality == "Premium":
+
+        recommendations.append(
+            "⭐ Premium materials may significantly increase "
+            "the project budget."
+        )
+
+    # Sustainability recommendation
+
+    recommendations.append(
+        "🌧️ Consider rainwater harvesting to improve "
+        "water sustainability."
     )
 
-    return round(quantity, 2)
+    recommendations.append(
+        "☀️ Consider solar panels to reduce long-term "
+        "energy consumption."
+    )
+
+    recommendations.append(
+        "🌿 Consider natural lighting and ventilation "
+        "to reduce electricity use."
+    )
+
+    return recommendations
 
 
 # ============================================================
-# PREDICT BUTTON
+# MAIN BUTTON
 # ============================================================
 
 if st.button(
-    "🤖 PREDICT FOOD REQUIREMENT",
+    "🤖 GENERATE AI HOUSE ESTIMATE",
     type="primary",
     use_container_width=True
 ):
 
     # --------------------------------------------------------
-    # VALIDATION
+    # Estimate house area
     # --------------------------------------------------------
 
-    total_people = adults + children
+    room_area = estimate_house_area()
 
-    if total_people == 0:
+    # Cannot exceed plot area
+    construction_area = min(
+        room_area,
+        land_area * 0.90
+    )
 
-        st.error(
-            "Please enter at least one adult or child."
-        )
+    total_built_area = (
+        construction_area * floors
+    )
 
-    elif len(selected_foods) == 0:
+    # --------------------------------------------------------
+    # MATERIAL PREDICTION
+    # --------------------------------------------------------
 
-        st.warning(
-            "Please select at least one food item."
-        )
+    materials = estimate_materials(
+        total_built_area
+    )
 
-    else:
+    # --------------------------------------------------------
+    # COST
+    # --------------------------------------------------------
 
-        # ----------------------------------------------------
-        # COMMUNITY SUMMARY
-        # ----------------------------------------------------
+    costs = calculate_cost(materials)
 
-        st.subheader("👥 Community Summary")
+    total_material_cost = sum(
+        costs.values()
+    )
 
-        effective_people = (
-            adults +
-            (children * 0.60)
-        )
 
-        col1, col2, col3, col4 = st.columns(4)
+    # ========================================================
+    # HOUSE SUMMARY
+    # ========================================================
 
-        col1.metric(
-            "Adults",
-            adults
-        )
+    st.subheader("🏠 House Planning Summary")
 
-        col2.metric(
-            "Children",
-            children
-        )
+    col1, col2, col3, col4 = st.columns(4)
 
-        col3.metric(
-            "Total People",
-            total_people
-        )
+    col1.metric(
+        "Land Area",
+        f"{land_area:,.0f} sq ft"
+    )
 
-        col4.metric(
-            "Adult Equivalent",
-            f"{effective_people:.0f}"
-        )
+    col2.metric(
+        "Estimated Floor Area",
+        f"{construction_area:,.0f} sq ft"
+    )
 
+    col3.metric(
+        "Floors",
+        floors
+    )
 
-        # ----------------------------------------------------
-        # FOOD PREDICTION
-        # ----------------------------------------------------
+    col4.metric(
+        "Total Built-up Area",
+        f"{total_built_area:,.0f} sq ft"
+    )
 
-        st.divider()
 
-        st.subheader("🌾 AI Food Requirement Prediction")
+    # ========================================================
+    # ROOM SUMMARY
+    # ========================================================
 
-        predictions = []
+    st.divider()
 
-        for food in selected_foods:
+    st.subheader("🛏️ House Requirements")
 
-            quantity = calculate_food_requirement(
-                food,
-                adults,
-                children,
-                days,
-                meals_per_day,
-                activity_level
-            )
+    room_col1, room_col2, room_col3 = st.columns(3)
 
-            predictions.append(
-                {
-                    "Food": food,
-                    "Required": quantity
-                }
-            )
+    room_col1.write(
+        f"🛏️ Bedrooms: **{bedrooms}**"
+    )
 
-        for item in predictions:
+    room_col1.write(
+        f"🚿 Bathrooms: **{bathrooms}**"
+    )
 
-            col1, col2 = st.columns([3, 2])
+    room_col1.write(
+        f"🛋️ Living Rooms: **{living_rooms}**"
+    )
 
-            col1.write(
-                f"🍚 **{item['Food']}**"
-            )
+    room_col2.write(
+        f"🍽️ Dining Rooms: **{dining_rooms}**"
+    )
 
-            col2.metric(
-                "Required Quantity",
-                f"{item['Required']:,.0f} kg"
-            )
+    room_col2.write(
+        f"🍳 Kitchens: **{kitchens}**"
+    )
 
+    room_col2.write(
+        f"🚗 Parking Spaces: **{parking_spaces}**"
+    )
 
-        # ----------------------------------------------------
-        # FOOD STOCK CHECK
-        # ----------------------------------------------------
+    room_col3.write(
+        f"🌿 Balconies: **{balconies}**"
+    )
 
-        st.divider()
+    room_col3.write(
+        f"🏗️ Quality: **{quality}**"
+    )
 
-        st.subheader("📦 Check Available Food Stock")
+    room_col3.write(
+        f"📍 Cost Level: **{location_level}**"
+    )
 
-        st.write(
-            "Enter the currently available quantity "
-            "for each selected food item."
-        )
 
-        stock_data = {}
+    # ========================================================
+    # MATERIAL PREDICTION
+    # ========================================================
 
-        for food in selected_foods:
+    st.divider()
 
-            stock = st.number_input(
-                f"Available {food} (kg)",
-                min_value=0.0,
-                value=0.0,
-                step=10.0,
-                key=f"stock_{food}"
-            )
+    st.subheader(
+        "🧱 AI-Predicted Construction Materials"
+    )
 
-            stock_data[food] = stock
+    material_units = {
 
+        "Cement": "bags",
 
-        # ----------------------------------------------------
-        # STOCK ANALYSIS
-        # ----------------------------------------------------
+        "Steel": "kg",
 
-        st.divider()
+        "Bricks": "pieces",
 
-        st.subheader("📊 Food Security Analysis")
+        "Sand": "m³",
 
-        for item in predictions:
+        "Aggregate": "m³",
 
-            food = item["Food"]
+        "Tiles": "sq ft",
 
-            required = item["Required"]
+        "Paint": "sq ft"
+    }
 
-            available = stock_data[food]
+    for material in materials:
 
-            difference = available - required
+        col1, col2 = st.columns([3, 2])
 
-            if available >= required:
-
-                st.success(
-                    f"✅ {food}: Sufficient stock. "
-                    f"Surplus ≈ {difference:,.0f} kg"
-                )
-
-            else:
-
-                shortage = abs(difference)
-
-                st.error(
-                    f"⚠️ {food}: Possible shortage of "
-                    f"{shortage:,.0f} kg"
-                )
-
-
-        # ----------------------------------------------------
-        # PEOPLE AT RISK
-        # ----------------------------------------------------
-
-        st.divider()
-
-        st.subheader("👥 Food Coverage Prediction")
-
-        coverage_results = []
-
-        for item in predictions:
-
-            food = item["Food"]
-
-            required = item["Required"]
-
-            available = stock_data[food]
-
-            if required > 0:
-
-                coverage = (
-                    available /
-                    required
-                ) * 100
-
-            else:
-
-                coverage = 100
-
-            coverage = min(coverage, 100)
-
-            coverage_results.append(
-                coverage
-            )
-
-        average_coverage = (
-            sum(coverage_results) /
-            len(coverage_results)
-        )
-
-        estimated_people_served = (
-            total_people *
-            average_coverage /
-            100
-        )
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "Food Coverage",
-            f"{average_coverage:.1f}%"
+        col1.write(
+            f"🔹 **{material}**"
         )
 
         col2.metric(
-            "Estimated People Served",
-            f"{estimated_people_served:,.0f}"
-        )
-
-        col3.metric(
-            "Coverage Gap",
-            f"{100 - average_coverage:.1f}%"
+            "Estimated Requirement",
+            f"{materials[material]:,.0f} "
+            f"{material_units[material]}"
         )
 
 
-        # ----------------------------------------------------
-        # AI RECOMMENDATIONS
-        # ----------------------------------------------------
+    # ========================================================
+    # COST TABLE
+    # ========================================================
 
-        st.divider()
+    st.divider()
 
-        st.subheader("🤖 AnnSeva AI Recommendations")
+    st.subheader(
+        "💰 Estimated Material Cost"
+    )
 
-        recommendations = []
+    for material in costs:
 
-        for item in predictions:
+        col1, col2 = st.columns([3, 2])
 
-            food = item["Food"]
+        col1.write(
+            f"🧱 **{material}**"
+        )
 
-            required = item["Required"]
-
-            available = stock_data[food]
-
-            if available < required:
-
-                shortage = required - available
-
-                recommendations.append(
-                    f"Arrange approximately "
-                    f"{shortage:,.0f} kg additional "
-                    f"{food}."
-                )
-
-            elif available > required * 1.30:
-
-                surplus = available - required
-
-                recommendations.append(
-                    f"{food} has a possible surplus of "
-                    f"{surplus:,.0f} kg. Consider sharing "
-                    f"with another food distribution centre."
-                )
-
-
-        if average_coverage < 70:
-
-            recommendations.append(
-                "⚠️ Food availability is significantly "
-                "below predicted demand. Consider arranging "
-                "additional supplies or community support."
-            )
-
-        elif average_coverage < 100:
-
-            recommendations.append(
-                "⚠️ Some food items may not be sufficient "
-                "for the complete planning period."
-            )
-
-        else:
-
-            recommendations.append(
-                "✅ Current food stock appears sufficient "
-                "for the selected planning period."
-            )
-
-
-        for recommendation in recommendations:
-
-            st.write(
-                "🔹 " + recommendation
-            )
-
-
-        # ----------------------------------------------------
-        # SDG 2 IMPACT
-        # ----------------------------------------------------
-
-        st.divider()
-
-        st.subheader("🌍 SDG 2 – ZERO HUNGER")
-
-        st.success(
-            """
-            **AnnSeva AI supports SDG 2 by helping communities
-            plan food requirements according to expected demand.**
-
-            The system can help identify possible food shortages
-            before they occur and support better distribution
-            planning.
-
-            **Community Data**
-            ↓
-
-            **AI Demand Prediction**
-            ↓
-
-            **Food Requirement**
-            ↓
-
-            **Stock Analysis**
-            ↓
-
-            **Shortage Detection**
-            ↓
-
-            **Food Distribution Recommendation**
-            """
+        col2.metric(
+            "Estimated Cost",
+            f"₹{costs[material]:,.0f}"
         )
 
 
-        # ----------------------------------------------------
-        # FINAL MESSAGE
-        # ----------------------------------------------------
+    # ========================================================
+    # TOTAL COST
+    # ========================================================
 
-        st.subheader("💡 Project Goal")
+    st.divider()
+
+    st.subheader(
+        "💵 Total Estimated Material Cost"
+    )
+
+    st.metric(
+        "Estimated Material Cost",
+        f"₹{total_material_cost:,.0f}"
+    )
+
+    st.caption(
+        "This is an approximate material-only estimate "
+        "based on demonstration assumptions."
+    )
+
+
+    # ========================================================
+    # COST RANGE
+    # ========================================================
+
+    lower_estimate = total_material_cost * 0.90
+    upper_estimate = total_material_cost * 1.15
+
+    st.info(
+        f"Estimated material cost range: "
+        f"₹{lower_estimate:,.0f} – "
+        f"₹{upper_estimate:,.0f}"
+    )
+
+
+    # ========================================================
+    # AI RECOMMENDATIONS
+    # ========================================================
+
+    st.divider()
+
+    st.subheader(
+        "🤖 BuildWise AI Recommendations"
+    )
+
+    recommendations = generate_recommendations(
+        land_area,
+        construction_area,
+        bedrooms,
+        bathrooms,
+        parking_spaces,
+        quality
+    )
+
+    for recommendation in recommendations:
 
         st.write(
-            "The goal of AnnSeva AI is not simply to calculate "
-            "food quantities. It is to help communities make "
-            "better food-planning decisions so that available "
-            "resources can reach the people who need them."
+            recommendation
         )
+
+
+    # ========================================================
+    # SUSTAINABLE BUILDING
+    # ========================================================
+
+    st.divider()
+
+    st.subheader(
+        "🌱 Sustainable Building Suggestions"
+    )
+
+    sustainable_col1, sustainable_col2 = st.columns(2)
+
+    with sustainable_col1:
+
+        st.write(
+            "☀️ **Solar Energy**"
+        )
+
+        st.write(
+            "Consider rooftop solar panels to "
+            "reduce dependence on grid electricity."
+        )
+
+        st.write(
+            "🌧️ **Rainwater Harvesting**"
+        )
+
+        st.write(
+            "Collect rainwater for gardening and "
+            "other suitable non-drinking uses."
+        )
+
+    with sustainable_col2:
+
+        st.write(
+            "💡 **Natural Lighting**"
+        )
+
+        st.write(
+            "Use windows and suitable building "
+            "orientation to improve daylight."
+        )
+
+        st.write(
+            "🌬️ **Natural Ventilation**"
+        )
+
+        st.write(
+            "Plan windows and openings to encourage "
+            "natural airflow."
+        )
+
+
+    # ========================================================
+    # AI EXPLANATION
+    # ========================================================
+
+    st.divider()
+
+    st.subheader(
+        "🧠 How BuildWise AI Works"
+    )
+
+    st.write(
+        """
+        BuildWise AI uses the user's house requirements,
+        estimated built-up area, construction quality and
+        cost level to calculate approximate material needs.
+
+        The system applies predefined prediction factors
+        to estimate cement, steel, bricks, sand, aggregate,
+        tiles and paint.
+
+        **User Input**
+        ↓
+
+        **House Area Estimation**
+        ↓
+
+        **AI Prediction Model**
+        ↓
+
+        **Material Requirement**
+        ↓
+
+        **Cost Estimation**
+        ↓
+
+        **Construction Recommendations**
+        """
+    )
 
 
 # ============================================================
@@ -570,5 +777,6 @@ if st.button(
 st.divider()
 
 st.caption(
-    "ANNSEVA AI | AI + SDG 2 | Zero Hunger"
+    "🏠 BUILDWISE AI | AI-Based Construction Estimation "
+    "| Educational Prototype"
 )
