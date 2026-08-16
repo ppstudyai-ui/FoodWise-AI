@@ -1,90 +1,20 @@
 import streamlit as st
-import math
 
 # ============================================================
-# FOODWISE AI
-# AI-Based Food Quantity Predictor
-# SDG 12 - Responsible Consumption and Production
+# JALWISE AI
+# AI-Based Clean Water Management System
+# SDG 6 - Clean Water and Sanitation
 # ============================================================
-
-# ------------------------------------------------------------
-# PAGE CONFIGURATION
-# ------------------------------------------------------------
 
 st.set_page_config(
-    page_title="FoodWise AI",
-    page_icon="🍽️",
+    page_title="JalWise AI",
+    page_icon="💧",
     layout="wide"
 )
 
-# ------------------------------------------------------------
-# FOOD DATABASE
-# Average quantity per adult
-# ------------------------------------------------------------
-
-FOOD_DATABASE = {
-    "Rice": {"quantity": 180, "unit": "g"},
-    "Biryani": {"quantity": 250, "unit": "g"},
-    "Pulao": {"quantity": 200, "unit": "g"},
-    "Dal": {"quantity": 150, "unit": "g"},
-    "Paneer": {"quantity": 120, "unit": "g"},
-    "Vegetable Curry": {"quantity": 130, "unit": "g"},
-    "Chole": {"quantity": 140, "unit": "g"},
-    "Rajma": {"quantity": 140, "unit": "g"},
-    "Chapati": {"quantity": 3, "unit": "pieces"},
-    "Poori": {"quantity": 3, "unit": "pieces"},
-    "Naan": {"quantity": 2, "unit": "pieces"},
-    "Salad": {"quantity": 80, "unit": "g"},
-    "Raita": {"quantity": 100, "unit": "g"},
-    "Dessert": {"quantity": 100, "unit": "g"},
-    "Ice Cream": {"quantity": 100, "unit": "g"},
-    "Fruit": {"quantity": 120, "unit": "g"},
-    "Snacks": {"quantity": 100, "unit": "g"},
-    "Samosa": {"quantity": 2, "unit": "pieces"},
-    "Juice": {"quantity": 250, "unit": "ml"},
-    "Soft Drink": {"quantity": 250, "unit": "ml"}
-}
-
-# ------------------------------------------------------------
-# EVENT FACTORS
-# ------------------------------------------------------------
-
-EVENT_FACTORS = {
-    "Birthday Party": 0.90,
-    "Wedding": 1.10,
-    "School Function": 0.85,
-    "Office Event": 0.90,
-    "Festival": 1.05,
-    "Family Function": 1.00,
-    "Community Event": 0.95,
-    "Other": 1.00
-}
-
-# ------------------------------------------------------------
-# MEAL FACTORS
-# ------------------------------------------------------------
-
-MEAL_FACTORS = {
-    "Breakfast": 0.75,
-    "Lunch": 1.00,
-    "Dinner": 1.00,
-    "Snacks": 0.60
-}
-
-# ------------------------------------------------------------
-# APPETITE FACTORS
-# ------------------------------------------------------------
-
-APPETITE_FACTORS = {
-    "Low": 0.85,
-    "Normal": 1.00,
-    "High": 1.15
-}
-
-
-# ------------------------------------------------------------
-# CUSTOM CSS
-# ------------------------------------------------------------
+# ============================================================
+# PAGE DESIGN
+# ============================================================
 
 st.markdown("""
 <style>
@@ -98,39 +28,32 @@ st.markdown("""
 .subtitle {
     text-align: center;
     font-size: 20px;
-    margin-bottom: 30px;
-}
-
-.info-box {
-    padding: 20px;
-    border-radius: 10px;
-    background-color: #f0f8f0;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 
-# ------------------------------------------------------------
+# ============================================================
 # HEADER
-# ------------------------------------------------------------
+# ============================================================
 
 st.markdown(
-    '<div class="main-title">🍽️ FOODWISE AI</div>',
+    '<div class="main-title">💧 JALWISE AI</div>',
     unsafe_allow_html=True
 )
 
 st.markdown(
     '<div class="subtitle">'
-    'AI-Based Food Quantity Prediction System'
+    'AI-Based Water Requirement & Conservation System'
     '</div>',
     unsafe_allow_html=True
 )
 
 st.info(
-    "🎯 Goal: Predict the required amount of food for an event "
-    "and reduce unnecessary food preparation and wastage."
+    "🌍 SDG 6: Clean Water and Sanitation | "
+    "Predict water requirements and identify possible excess usage."
 )
 
 
@@ -138,363 +61,439 @@ st.info(
 # SIDEBAR
 # ============================================================
 
-st.sidebar.header("⚙️ Event Information")
+st.sidebar.header("🏠 User Information")
 
-event = st.sidebar.selectbox(
-    "Type of Event",
-    list(EVENT_FACTORS.keys())
+location_type = st.sidebar.selectbox(
+    "Location Type",
+    [
+        "Household",
+        "School",
+        "Office",
+        "Community"
+    ]
 )
 
-meal = st.sidebar.selectbox(
-    "Meal Type",
-    list(MEAL_FACTORS.keys())
-)
-
-adults = st.sidebar.number_input(
-    "Number of Adults",
-    min_value=0,
+people = st.sidebar.number_input(
+    "Number of People",
+    min_value=1,
     max_value=10000,
-    value=50,
+    value=5,
     step=1
 )
 
-children = st.sidebar.number_input(
-    "Number of Children",
-    min_value=0,
-    max_value=10000,
-    value=20,
+bathrooms = st.sidebar.number_input(
+    "Number of Bathrooms",
+    min_value=1,
+    max_value=100,
+    value=2,
     step=1
 )
 
-appetite = st.sidebar.selectbox(
-    "Expected Appetite",
-    list(APPETITE_FACTORS.keys())
+garden_area = st.sidebar.number_input(
+    "Garden Area (square metres)",
+    min_value=0.0,
+    max_value=10000.0,
+    value=20.0,
+    step=1.0
+)
+
+washing_loads = st.sidebar.number_input(
+    "Washing Machine Loads per Day",
+    min_value=0,
+    max_value=100,
+    value=1,
+    step=1
+)
+
+temperature = st.sidebar.slider(
+    "Temperature (°C)",
+    min_value=10,
+    max_value=50,
+    value=30
+)
+
+previous_usage = st.sidebar.number_input(
+    "Previous Daily Water Usage (litres)",
+    min_value=0.0,
+    max_value=1000000.0,
+    value=700.0,
+    step=50.0
 )
 
 
 # ============================================================
-# MENU SELECTION
+# AI PREDICTION FUNCTION
 # ============================================================
 
-st.subheader("🍛 Select Food Menu")
-
-selected_foods = st.multiselect(
-    "Choose the food items you want to prepare:",
-    list(FOOD_DATABASE.keys()),
-    default=["Rice", "Dal", "Paneer", "Chapati", "Salad", "Dessert"]
-)
-
-
-# ============================================================
-# PREDICTION FUNCTION
-# ============================================================
-
-def predict_quantity(
-    food,
-    adults,
-    children,
-    event,
-    meal,
-    appetite
+def predict_water_requirement(
+    people,
+    bathrooms,
+    garden_area,
+    washing_loads,
+    temperature,
+    location_type
 ):
 
-    base_quantity = FOOD_DATABASE[food]["quantity"]
-    unit = FOOD_DATABASE[food]["unit"]
+    # --------------------------------------------------------
+    # Basic daily requirement
+    # --------------------------------------------------------
 
-    event_factor = EVENT_FACTORS[event]
-    meal_factor = MEAL_FACTORS[meal]
-    appetite_factor = APPETITE_FACTORS[appetite]
+    # Approximate planning value for demonstration.
+    # This is NOT a medical or official water requirement.
+    personal_use = people * 135
 
-    # Children consume approximately 60% of adult portion
-    child_factor = 0.60
+    # --------------------------------------------------------
+    # Bathroom infrastructure factor
+    # --------------------------------------------------------
 
-    effective_people = adults + (children * child_factor)
+    bathroom_use = bathrooms * 20
 
-    # AI prediction formula
+    # --------------------------------------------------------
+    # Washing machine water requirement
+    # --------------------------------------------------------
 
-    quantity = (
-        base_quantity
-        * effective_people
-        * event_factor
-        * meal_factor
-        * appetite_factor
-    )
+    washing_use = washing_loads * 70
 
-    # Small 5% safety margin
-    quantity = quantity * 1.05
+    # --------------------------------------------------------
+    # Garden water requirement
+    # --------------------------------------------------------
 
-    # Convert grams to kilograms
-    if unit == "g":
+    garden_use = garden_area * 3
 
-        quantity = quantity / 1000
-        unit = "kg"
+    # --------------------------------------------------------
+    # Temperature adjustment
+    # --------------------------------------------------------
 
-        quantity = round(quantity, 2)
+    if temperature >= 35:
+        temperature_factor = 1.15
 
-    elif unit == "ml":
+    elif temperature >= 30:
+        temperature_factor = 1.08
 
-        quantity = quantity / 1000
-        unit = "litres"
-
-        quantity = round(quantity, 2)
+    elif temperature <= 20:
+        temperature_factor = 0.90
 
     else:
+        temperature_factor = 1.00
 
-        quantity = math.ceil(quantity)
+    # --------------------------------------------------------
+    # Location adjustment
+    # --------------------------------------------------------
 
-    return quantity, unit
+    if location_type == "School":
+        location_factor = 0.80
+
+    elif location_type == "Office":
+        location_factor = 0.75
+
+    elif location_type == "Community":
+        location_factor = 0.90
+
+    else:
+        location_factor = 1.00
+
+    # --------------------------------------------------------
+    # AI-style prediction
+    # --------------------------------------------------------
+
+    estimated_water = (
+        personal_use
+        + bathroom_use
+        + washing_use
+        + garden_use
+    )
+
+    estimated_water *= temperature_factor
+    estimated_water *= location_factor
+
+    return round(estimated_water, 2)
 
 
 # ============================================================
-# CALCULATE BUTTON
+# PREDICT BUTTON
 # ============================================================
 
 if st.button(
-    "🤖 PREDICT REQUIRED FOOD QUANTITY",
+    "🤖 PREDICT WATER REQUIREMENT",
     type="primary",
     use_container_width=True
 ):
 
-    if adults == 0 and children == 0:
+    # --------------------------------------------------------
+    # AI PREDICTION
+    # --------------------------------------------------------
 
-        st.error(
-            "Please enter at least one adult or child."
-        )
+    predicted_water = predict_water_requirement(
+        people,
+        bathrooms,
+        garden_area,
+        washing_loads,
+        temperature,
+        location_type
+    )
 
-    elif len(selected_foods) == 0:
+    # --------------------------------------------------------
+    # RESULTS
+    # --------------------------------------------------------
 
-        st.warning(
-            "Please select at least one food item."
+    st.subheader("📊 AI Water Prediction")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric(
+        "People",
+        people
+    )
+
+    col2.metric(
+        "Predicted Requirement",
+        f"{predicted_water:,.0f} L/day"
+    )
+
+    col3.metric(
+        "Current Usage",
+        f"{previous_usage:,.0f} L/day"
+    )
+
+    difference = previous_usage - predicted_water
+
+    if difference > 0:
+
+        col4.metric(
+            "Possible Excess",
+            f"{difference:,.0f} L/day"
         )
 
     else:
 
-        # ----------------------------------------------------
-        # BASIC INFORMATION
-        # ----------------------------------------------------
-
-        st.subheader("📋 Event Summary")
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        col1.metric(
-            "Adults",
-            adults
-        )
-
-        col2.metric(
-            "Children",
-            children
-        )
-
-        col3.metric(
-            "Event",
-            event
-        )
-
         col4.metric(
-            "Meal",
-            meal
+            "Additional Need",
+            f"{abs(difference):,.0f} L/day"
         )
 
-        # ----------------------------------------------------
-        # EFFECTIVE PEOPLE
-        # ----------------------------------------------------
 
-        effective_people = adults + (children * 0.60)
+    # ========================================================
+    # WATER USAGE ANALYSIS
+    # ========================================================
 
-        st.write(
-            f"👥 **Effective consumption population:** "
-            f"{effective_people:.1f} adult-equivalent portions"
+    st.divider()
+
+    st.subheader("💧 Water Usage Analysis")
+
+    if previous_usage > predicted_water * 1.20:
+
+        excess = previous_usage - predicted_water
+
+        st.error(
+            f"⚠️ Your estimated usage is approximately "
+            f"{excess:,.0f} litres/day higher than the "
+            f"predicted requirement."
         )
 
-        # ----------------------------------------------------
-        # FOOD PREDICTION
-        # ----------------------------------------------------
+        status = "High Water Usage"
 
-        st.subheader("📊 AI Food Quantity Prediction")
+    elif previous_usage > predicted_water:
 
-        results = []
+        excess = previous_usage - predicted_water
 
-        for food in selected_foods:
-
-            quantity, unit = predict_quantity(
-                food,
-                adults,
-                children,
-                event,
-                meal,
-                appetite
-            )
-
-            results.append(
-                {
-                    "Food Item": food,
-                    "Recommended Quantity": quantity,
-                    "Unit": unit
-                }
-            )
-
-        # ----------------------------------------------------
-        # DISPLAY RESULTS
-        # ----------------------------------------------------
-
-        for result in results:
-
-            col1, col2, col3 = st.columns([3, 2, 1])
-
-            col1.write(
-                f"🍴 **{result['Food Item']}**"
-            )
-
-            col2.metric(
-                "Quantity",
-                f"{result['Recommended Quantity']} "
-                f"{result['Unit']}"
-            )
-
-            col3.write("✅ Recommended")
-
-        # ----------------------------------------------------
-        # WASTE REDUCTION
-        # ----------------------------------------------------
-
-        st.divider()
-
-        st.subheader("♻️ Food Waste Reduction Analysis")
-
-        # Traditional catering safety margin
-        traditional_margin = 0.15
-
-        # FoodWise AI margin
-        ai_margin = 0.05
-
-        traditional_food = (
-            effective_people *
-            (1 + traditional_margin)
+        st.warning(
+            f"⚠️ Your usage is approximately "
+            f"{excess:,.0f} litres/day above the "
+            f"predicted requirement."
         )
 
-        ai_food = (
-            effective_people *
-            (1 + ai_margin)
-        )
+        status = "Moderately High"
 
-        estimated_reduction = (
-            (traditional_food - ai_food)
-            / traditional_food
-        ) * 100
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "Traditional Planning",
-            "15% Extra"
-        )
-
-        col2.metric(
-            "FoodWise AI",
-            "5% Safety Margin"
-        )
-
-        col3.metric(
-            "Estimated Reduction",
-            f"{estimated_reduction:.1f}%"
-        )
-
-        # ----------------------------------------------------
-        # MONEY SAVING ESTIMATE
-        # ----------------------------------------------------
-
-        st.subheader("💰 Estimated Cost Saving")
-
-        food_cost = st.number_input(
-            "Estimated average food cost per person (₹)",
-            min_value=1,
-            max_value=10000,
-            value=150,
-            step=10
-        )
-
-        traditional_cost = (
-            effective_people *
-            (1 + traditional_margin) *
-            food_cost
-        )
-
-        ai_cost = (
-            effective_people *
-            (1 + ai_margin) *
-            food_cost
-        )
-
-        estimated_saving = (
-            traditional_cost -
-            ai_cost
-        )
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "Traditional Estimated Cost",
-            f"₹{traditional_cost:,.0f}"
-        )
-
-        col2.metric(
-            "FoodWise AI Cost",
-            f"₹{ai_cost:,.0f}"
-        )
-
-        col3.metric(
-            "Potential Saving",
-            f"₹{estimated_saving:,.0f}"
-        )
-
-        # ----------------------------------------------------
-        # SDG CONNECTION
-        # ----------------------------------------------------
-
-        st.divider()
-
-        st.subheader("🌍 SDG Impact")
+    else:
 
         st.success(
-            """
-            **SDG 12 – Responsible Consumption and Production**
-
-            FoodWise AI helps event organizers estimate the required
-            quantity of food before preparation. By reducing
-            over-preparation, the system can help reduce avoidable
-            food waste, unnecessary expenditure and resource usage.
-
-            **Problem → Excess Preparation → Food Waste**
-
-            **AI Solution → Demand Prediction → Better Planning → Less Waste**
-            """
+            "✅ Your current water usage is within the "
+            "predicted requirement range."
         )
 
-        # ----------------------------------------------------
-        # AI RECOMMENDATION
-        # ----------------------------------------------------
+        status = "Efficient"
 
-        st.subheader("🤖 FoodWise AI Recommendation")
 
-        if estimated_reduction >= 8:
+    # ========================================================
+    # SAVING POTENTIAL
+    # ========================================================
 
-            recommendation = (
-                "The event has a significant opportunity to reduce "
-                "over-preparation. Follow the recommended quantities "
-                "and monitor actual consumption for future events."
-            )
+    st.subheader("♻️ Water Saving Potential")
 
-        else:
+    if previous_usage > predicted_water:
 
-            recommendation = (
-                "The recommended quantities provide a balanced "
-                "safety margin while avoiding unnecessary "
-                "over-preparation."
-            )
+        saving = previous_usage - predicted_water
 
-        st.info(recommendation)
+    else:
+
+        saving = 0
+
+    monthly_saving = saving * 30
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Daily Saving Potential",
+        f"{saving:,.0f} L"
+    )
+
+    col2.metric(
+        "Monthly Saving Potential",
+        f"{monthly_saving:,.0f} L"
+    )
+
+    col3.metric(
+        "Status",
+        status
+    )
+
+
+    # ========================================================
+    # COST ESTIMATION
+    # ========================================================
+
+    st.subheader("💰 Estimated Water Cost")
+
+    water_cost = st.number_input(
+        "Estimated cost per 1,000 litres (₹)",
+        min_value=1.0,
+        max_value=10000.0,
+        value=50.0,
+        step=5.0
+    )
+
+    current_cost = (
+        previous_usage / 1000
+    ) * water_cost
+
+    predicted_cost = (
+        predicted_water / 1000
+    ) * water_cost
+
+    possible_saving = (
+        current_cost - predicted_cost
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Current Daily Cost",
+        f"₹{current_cost:,.2f}"
+    )
+
+    col2.metric(
+        "Predicted Daily Cost",
+        f"₹{predicted_cost:,.2f}"
+    )
+
+    col3.metric(
+        "Possible Saving",
+        f"₹{max(possible_saving, 0):,.2f}"
+    )
+
+
+    # ========================================================
+    # AI RECOMMENDATIONS
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("🤖 JalWise AI Recommendations")
+
+    recommendations = []
+
+    if previous_usage > predicted_water * 1.20:
+
+        recommendations.append(
+            "Check for leaking taps, pipes and toilets."
+        )
+
+    if garden_area > 50:
+
+        recommendations.append(
+            "Consider watering plants during early morning "
+            "or evening to reduce water loss."
+        )
+
+    if washing_loads > 2:
+
+        recommendations.append(
+            "Try running the washing machine with full loads."
+        )
+
+    if bathrooms > people:
+
+        recommendations.append(
+            "Avoid unnecessary water use in multiple bathrooms."
+        )
+
+    if temperature >= 35:
+
+        recommendations.append(
+            "High temperature may increase water demand. "
+            "Use water carefully during hot weather."
+        )
+
+    if len(recommendations) == 0:
+
+        recommendations.append(
+            "Your water usage pattern appears reasonable. "
+            "Continue monitoring daily consumption."
+        )
+
+    for recommendation in recommendations:
+
+        st.write(
+            "🔹 " + recommendation
+        )
+
+
+    # ========================================================
+    # SDG 6 IMPACT
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("🌍 SDG 6 Impact")
+
+    st.success(
+        """
+        **SDG 6 – Clean Water and Sanitation**
+
+        JalWise AI promotes responsible water management by
+        estimating water requirements and identifying possible
+        excessive consumption.
+
+        **Data Input**
+        ↓
+
+        **AI Prediction**
+        ↓
+
+        **Water Usage Analysis**
+        ↓
+
+        **Conservation Recommendation**
+        ↓
+
+        **Reduced Water Wastage**
+        """
+    )
+
+
+    # ========================================================
+    # PROJECT MESSAGE
+    # ========================================================
+
+    st.subheader("💡 Why JalWise AI?")
+
+    st.write(
+        "Water is a limited resource. Instead of using the same "
+        "amount of water every day, JalWise AI estimates water "
+        "requirements based on people, facilities, weather and "
+        "activities. This can help users make better water-use "
+        "decisions."
+    )
 
 
 # ============================================================
@@ -504,5 +503,5 @@ if st.button(
 st.divider()
 
 st.caption(
-    "FOODWISE AI | SDG 12 – Responsible Consumption and Production"
+    "JALWISE AI | AI + SDG 6 | Clean Water and Sanitation"
 )
